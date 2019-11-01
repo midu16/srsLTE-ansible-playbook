@@ -1,0 +1,3 @@
+[srsLTE]
+
+srsLTE_host     ansible_host="127.0.0.1"

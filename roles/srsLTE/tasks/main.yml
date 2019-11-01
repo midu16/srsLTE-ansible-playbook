@@ -1,0 +1,203 @@
+---
+# tasks file for srsLTE
+# Mihai IDU (c) - 2019
+##################################################################################################################################################################################
+# Colect the facts of the target hosts
+##################################################################################################################################################################################
+- name: Collect only facts returned by facter
+  setup:
+    gather_subset:
+      - '!all'
+      - '!any'
+      - facter
+
+##################################################################################################################################################################################
+# Colect the facts regarding the OS version major version and distribution version
+##################################################################################################################################################################################
+- name: Debug the OS distribution  
+  debug:
+    msg: "{{ hostvars[inventory_hostname].ansible_distribution }}"
+
+- name: Debug the OS major version
+  debug:
+    msg: "{{ hostvars[inventory_hostname].ansible_distribution_major_version }}"
+
+- name: Debug the OS version
+  debug:
+    msg: "{{ hostvars[inventory_hostname].ansible_distribution_version }}"
+
+##################################################################################################################################################################################
+# Determine the type of the host
+##################################################################################################################################################################################
+# check if the host is virtual or physical
+- name: Debug the ansible_virtualization_role
+  debug:
+    msg: This is a Virtual Host
+  when: ansible_virtualization_role == 'guest'
+  ignore_errors: yes
+
+- name: Debug the ansible_virtualization_role
+  debug:
+    msg: This is a Physical Host
+  when: ansible_virtualization_role == 'host'
+  ignore_errors: yes
+
+##################################################################################################################################################################################
+# Add specified repository into sources list.
+##################################################################################################################################################################################
+- name: Add the "Ettus Research" repository
+  apt_repository:
+    repo: ppa:ettusresearch/uhd
+    state: present
+
+##################################################################################################################################################################################
+# this task is installing all the required packages for the Ubuntu
+##################################################################################################################################################################################
+- name: Install a list of packages
+  apt:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - libuhd-dev
+    - libuhd003
+    - uhd-host
+    - cmake
+    - libfftw3-dev
+    - libmbedtls-dev
+    - libboost-program-options-dev
+    - libconfig++-dev
+    - libsctp-dev
+
+##################################################################################################################################################################################
+# Example git checkout from Ansible Playbooks
+##################################################################################################################################################################################
+- name: Clone the srsLTE github
+  git:
+    repo: 'https://github.com/srsLTE/srsLTE.git'
+    dest: '{{ home_directory }}'
+    
+##################################################################################################################################################################################
+# Create the build directory
+##################################################################################################################################################################################
+- name: Create the build directory on the srsLTE
+  file:
+    path: '{{ home_directory }}/srsLTE/build'
+    state: directory
+    recurse: yes
+
+##################################################################################################################################################################################
+# Cmake
+##################################################################################################################################################################################
+- name: Cmake 
+  shell: |
+    cd '{{ home_directory }}/srsLTE/build';
+    cmake ../;
+  args:
+    executable: /bin/bash
+
+##################################################################################################################################################################################
+# make
+##################################################################################################################################################################################
+- name: Build 'all' target with a custom Makefile
+  make:
+    chdir: '{{ home_directory }}/srsLTE/build'
+    target: all
+    file: '{{ home_directory }}/srsLTE/build/Makefile'
+
+##################################################################################################################################################################################
+# make test
+##################################################################################################################################################################################
+- name: make test
+  shell: |
+    cd '{{ home_directory }}/srsLTE/build';
+    make test;
+  args:
+    executable: /bin/bash
+
+##################################################################################################################################################################################
+# make test
+##################################################################################################################################################################################
+- name: Run 'install' target as root
+  make:
+    chdir: '{{ home_directory }}/srsLTE/build'
+    target: install
+  become: yes
+
+##################################################################################################################################################################################
+# Copy the configuration for the eNB files to the specific directory
+##################################################################################################################################################################################
+- name: Copy the configuration script for enb
+  copy:
+     src: "{{ role_path }}/files/srsenb/enb.conf"
+     dest: "{{ home_directory }}/srsLTE/srsenb/enb.conf"
+     owner: root
+     group: root
+     mode: '0640'
+     
+- name: Copy the configuration script for sib
+  copy:
+     src: "{{ role_path }}/files/srsenb/sib.conf"
+     dest: "{{ home_directory }}/srsLTE/srsenb/sib.conf"
+     owner: root
+     group: root
+     mode: '0640'
+
+- name: Copy the configuration script for sib.conf.mbsfn
+  copy:
+     src: "{{ role_path }}/files/srsenb/sib.conf.mbsfn"
+     dest: "{{ home_directory }}/srsLTE/srsenb/sib.conf.mbsfn"
+     owner: root
+     group: root
+     mode: '0640'
+
+- name: Copy the configuration script for drb
+  copy:
+     src: "{{ role_path }}/files/srsenb/drb.conf"
+     dest: "{{ home_directory }}/srsLTE/srsenb/drb.conf"
+     owner: root
+     group: root
+     mode: '0640'
+
+- name: Copy the configuration script for rr
+  copy:
+     src: "{{ role_path }}/files/srsenb/rr.conf"
+     dest: "{{ home_directory }}/srsLTE/srsenb/rr.conf"
+     owner: root
+     group: root
+     mode: '0640'
+
+- name: Copy the configuration script for mbms
+  copy:
+     src: "{{ role_path }}/files/srsenb/mbms.conf"
+     dest: "{{ home_directory }}/srsLTE/srsenb/mbms.conf"
+     owner: root
+     group: root
+     mode: '0640'
+
+##################################################################################################################################################################################
+# Copy the configuration for the CN files to the specific directory
+##################################################################################################################################################################################
+- name: Copy the configuration script for epc
+  copy:
+     src: "{{ role_path }}/files/srsepc/epc.conf"
+     dest: "{{ home_directory }}/srsLTE/srsepc/epc.conf"
+     owner: root
+     group: root
+     mode: '0640'
+
+- name: Copy the masquerade script for epc
+  copy:
+     src: "{{ role_path }}/files/srsepc/if_masq.sh"
+     dest: "{{ home_directory }}/srsLTE/srsepc/if_masq.sh"
+     owner: root
+     group: root
+     mode: '0640'
+
+- name: Copy the HSS for epc
+  copy:
+     src: "{{ role_path }}/files/srsepc/user_db.csv"
+     dest: "{{ home_directory }}/srsLTE/srsepc/user_db.csv"
+     owner: root
+     group: root
+     mode: '0640'
+

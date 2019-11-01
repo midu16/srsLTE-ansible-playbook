@@ -1,0 +1,3 @@
+---
+# defaults file for srsLTE
+home_directory : lookup('env','HOME')
