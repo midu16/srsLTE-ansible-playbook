@@ -1,0 +1,4 @@
+[ettus-uhd-stable-repo]
+name=Ettus Research - UHD Stable $releasever-$basearchthon serial timeout
+baseurl=http://files.ettus.com/binaries/uhd/repo/uhd/fedora/$releasever/$basearch
+gpgcheck=0

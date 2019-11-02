@@ -53,20 +53,24 @@
 ##################################################################################################################################################################################
 # this task is installing all the required packages for the Ubuntu
 ##################################################################################################################################################################################
-- name: Install a list of packages
-  apt:
-    name: "{{ packages }}"
-  vars:
-    packages:
-    - libuhd-dev
-    - libuhd003
-    - uhd-host
-    - cmake
-    - libfftw3-dev
-    - libmbedtls-dev
-    - libboost-program-options-dev
-    - libconfig++-dev
-    - libsctp-dev
+# Install the packets
+- include: Ubuntu.yml
+  when: ansible_facts['distribution'] == "Ubuntu"
+
+##################################################################################################################################################################################
+# this task is installing all the required packages for the CentOS
+##################################################################################################################################################################################
+# Clean the yum metadata
+#yum clean metadata all
+- name: Remove repository (and clean up left-over metadata)
+  yum_repository:
+    name: epel
+    state: absent
+  notify: yum-clean-metadata
+
+# Install the packets
+- include: CentOS.yml
+  when: ansible_facts['distribution'] == "CentOS"
 
 ##################################################################################################################################################################################
 # Example git checkout from Ansible Playbooks
